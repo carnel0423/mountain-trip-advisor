@@ -1,0 +1,202 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>旅山アプリ</title>
+    <meta
+      name="description"
+      content="日時と現在地から、日本百名山・二百名山の候補、天候、危険情報、アクセスをまとめて確認できる旅山アプリ。"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy-block">
+          <p class="eyebrow">Mountain Trip Advisor Japan</p>
+          <h1>旅山アプリ</h1>
+          <p class="hero-copy">
+            旅の途中でも、いま登りやすい山をすぐ比べられるようにした登山候補アプリです。
+            日時、現在地、登山レベル、地域から候補を絞り、天候や危険情報もまとめて確認できます。
+          </p>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="controls card">
+          <div class="section-heading">
+            <h2>検索条件</h2>
+            <p>近い山を優先しつつ、季節やレベルとの相性も見ます。</p>
+          </div>
+
+          <div class="quick-actions">
+            <button type="button" class="ghost-btn" data-quick-date="today">今日</button>
+            <button type="button" class="ghost-btn" data-quick-date="tomorrow">明日</button>
+            <button type="button" class="ghost-btn" data-quick-date="weekend">今週末</button>
+          </div>
+
+          <div class="form-grid">
+            <label>
+              <span>登山日時</span>
+              <input id="tripDateTime" type="datetime-local" />
+            </label>
+            <label>
+              <span>登山レベル</span>
+              <select id="experienceLevel">
+                <option value="all">全て</option>
+                <option value="beginner">初級</option>
+                <option value="intermediate" selected>中級</option>
+                <option value="advanced">上級</option>
+              </select>
+            </label>
+            <label>
+              <span>距離優先</span>
+              <select id="radiusKm">
+                <option value="50">50km以内</option>
+                <option value="100" selected>100km以内</option>
+                <option value="150">150km以内</option>
+                <option value="200">200km以内</option>
+                <option value="250">250km以内</option>
+              </select>
+            </label>
+            <label>
+              <span>地域</span>
+              <select id="regionFilter">
+                <option value="all" selected>全国</option>
+                <option value="北海道">北海道</option>
+                <option value="東北">東北</option>
+                <option value="関東">関東</option>
+                <option value="中部">中部</option>
+                <option value="近畿">近畿</option>
+                <option value="中国">中国</option>
+                <option value="四国">四国</option>
+                <option value="九州">九州</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="manual-location search-row">
+            <label>
+              <span>山名検索</span>
+              <input id="keywordInput" type="text" placeholder="谷川岳、立山、阿蘇山 など" />
+            </label>
+            <label>
+              <span>手動入力: 緯度</span>
+              <input id="manualLat" type="number" step="0.0001" placeholder="35.6812" />
+            </label>
+            <label>
+              <span>手動入力: 経度</span>
+              <input id="manualLon" type="number" step="0.0001" placeholder="139.7671" />
+            </label>
+          </div>
+
+          <div class="location-bar">
+            <button id="locateButton" type="button" class="primary-btn">現在地を使う</button>
+            <div>
+              <p id="locationStatus" class="status-text">位置情報はまだ取得していません。</p>
+              <p class="tiny-text">スマホで位置情報を許可すると、50kmから250km以内の山を優先表示します。</p>
+            </div>
+          </div>
+
+          <div class="cta-row">
+            <button id="manualLocationButton" type="button" class="ghost-btn">手動位置を反映</button>
+            <button id="resetButton" type="button" class="ghost-btn">条件をリセット</button>
+          </div>
+        </section>
+
+        <aside class="sidebar">
+          <section class="card summary-card">
+            <div class="section-heading">
+              <h2>収録範囲</h2>
+              <p>候補の比較に使っている情報の範囲です。</p>
+            </div>
+            <ul class="check-list">
+              <li>日本百名山100座と日本二百名山100座を収録</li>
+              <li>天候は気象庁の最新予報を基に表示</li>
+              <li>火山、危険箇所、アクセス情報は山ごとに整理して表示</li>
+              <li>前日降雨、クマ目撃、通行規制メモは取得できた山から反映</li>
+              <li>二百名山は全100座を収録済みで、適期やコース詳細は継続補完中</li>
+            </ul>
+            <p class="panel-note">
+              主な確認先:
+              <a href="https://www.jma.go.jp/" target="_blank" rel="noopener noreferrer">気象庁</a> /
+              <a href="https://www.mt-compass.com/" target="_blank" rel="noopener noreferrer">コンパス</a> /
+              <a href="https://www.momonayama.net/" target="_blank" rel="noopener noreferrer">全頂制覇百名山</a> /
+              <a href="https://www.yamareco.com/" target="_blank" rel="noopener noreferrer">ヤマレコ</a> /
+              <a href="https://yamap.com/" target="_blank" rel="noopener noreferrer">YAMAP</a>
+            </p>
+            <p class="panel-note" id="dataUpdatedAt">データ取得日時を読み込み中です。</p>
+          </section>
+
+          <section class="card summary-card">
+            <div class="section-heading">
+              <h2>表示順のルール</h2>
+              <p>候補一覧は次の条件をもとに並びます。</p>
+            </div>
+            <ul class="check-list">
+              <li>検索条件に合う山だけを候補に残します</li>
+              <li>登山適期との一致を優先します</li>
+              <li>現在地からの距離が近い山を優先します</li>
+              <li>雨や風のリスクが高い山は減点します</li>
+              <li>噴火警戒レベルや危険情報が強い山は大きく減点します</li>
+            </ul>
+          </section>
+
+          <section class="card summary-card">
+            <div class="section-heading">
+              <h2>安全確認</h2>
+              <p>出発前に最低限確認しておきたい項目です。</p>
+            </div>
+            <ul class="check-list">
+              <li>天候・風・気象庁の注意報や警報を確認する</li>
+              <li>前日の雨量、火山情報、通行止め、危険箇所、残雪状況を確認する</li>
+              <li>コースタイム、累積標高、日没までの余裕を確認する</li>
+              <li>地図、現在地確認手段、予備バッテリー、撤退判断の目安を準備し、携帯電波は圏外前提でオフライン地図を用意する</li>
+              <li>初心者を連れて行く場合は初級の山を選び、単独行を避け、早出早着で歩く</li>
+              <li>雨具、防寒着、ヘッドランプ、救急用品、飲食料を確認し、登山届は <a href="https://www.mt-compass.com/" target="_blank" rel="noopener noreferrer">コンパス</a> などで事前提出する</li>
+              <li>登山口と駐車場、連絡手段を事前に確認し、コンパスや自治体・山域公式の通行規制情報も確認する</li>
+            </ul>
+          </section>
+        </aside>
+      </main>
+
+      <section class="results-header">
+        <div>
+          <p class="eyebrow">Recommendations</p>
+          <h2 id="resultsTitle">おすすめの山を計算します</h2>
+        </div>
+        <p id="resultsMeta" class="results-meta">条件を選ぶと、日本百名山と日本二百名山の200座から候補を並べ替えます。</p>
+      </section>
+
+      <section id="resultsGrid" class="results-grid"></section>
+    </div>
+
+    <template id="mountainCardTemplate">
+      <article class="mountain-card card">
+        <div class="card-top">
+          <div>
+            <p class="mountain-region"></p>
+            <h3 class="mountain-name"></h3>
+          </div>
+          <button type="button" class="favorite-btn" aria-label="登った山や保存したい山をチェック">&#9734;</button>
+        </div>
+        <p class="mountain-catch"></p>
+        <div class="score-band">
+          <div class="score-pill"></div>
+          <div class="season-pill"></div>
+          <div class="distance-pill"></div>
+        </div>
+        <div class="stats-grid"></div>
+        <div class="info-switcher"></div>
+        <div class="info-panel"></div>
+      </article>
+    </template>
+
+    <script src="./mountains-data.js"></script>
+    <script src="./mountains-200-data.js"></script>
+    <script src="./car-access-data.js"></script>
+    <script src="./route-options-data.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
