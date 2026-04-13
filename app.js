@@ -3949,6 +3949,7 @@
     bindElements();
     bindEvents();
     hydrateUi();
+    registerServiceWorker();
     renderRecommendations();
     prefetchJmaForecasts().then(() => {
       renderRecommendations();
@@ -6011,6 +6012,15 @@
       clearTimeout(timerId);
       timerId = window.setTimeout(fn, waitMs);
     };
+  }
+
+  function registerServiceWorker() {
+    if (!("serviceWorker" in navigator) || window.location.protocol !== "https:") {
+      return;
+    }
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./service-worker.js").catch(() => {});
+    });
   }
 
   function escapeHtml(value) {
