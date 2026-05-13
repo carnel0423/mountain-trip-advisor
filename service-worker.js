@@ -1,4 +1,4 @@
-const CACHE_NAME = "tabiyama-v1";
+const CACHE_NAME = "tabiyama-v2";
 const APP_ASSETS = [
   "./",
   "./index.html",

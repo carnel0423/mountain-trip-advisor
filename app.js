@@ -112,7 +112,9 @@
     "大崩山": "祝子川本谷周辺は増水時に徒渉や渡渉判断が難しくなり、悪天候後は特に注意が必要です"
   };
   const BEAR_REPORT_RADIUS_KM = 20;
-  const BEAR_REPORT_RECENT_DAYS = 90;
+  const BEAR_REPORT_RECENT_DAYS = 30;
+  const BEAR_REPORT_PAGE_SIZE = 1000;
+  const BEAR_REPORT_MAX_PAGES = 8;
   const KUMAP_SUPABASE_URL = "https://xgzsccaaaxadvzzsztde.supabase.co";
   const KUMAP_PUBLISHABLE_KEY = "sb_publishable_w8C8t8pIk_ITKYRkj1nozg_dDzztHIN";
   const ROUTE_RESTRICTION_PATTERN = /通行止|通行規制|冬期閉鎖|閉鎖|立入禁止|入山規制|車両規制|マイカー規制|時間制限|一般車進入不可|規制情報|道路状況確認|林道状況確認|開山期間|入山期間/i;
@@ -4919,27 +4921,54 @@
       return state.bearReports;
     }
     try {
-      const response = await fetch(
-        KUMAP_SUPABASE_URL +
-        "/rest/v1/points?select=id,event_time,content,location&order=event_time.desc&limit=400",
-        {
-          headers: {
-            apikey: KUMAP_PUBLISHABLE_KEY,
-            Authorization: "Bearer " + KUMAP_PUBLISHABLE_KEY
-          }
-        }
-      );
-      if (!response.ok) {
-        throw new Error("bear reports fetch failed");
-      }
-      const json = await response.json();
       const now = Date.now();
       const minTime = now - BEAR_REPORT_RECENT_DAYS * 24 * 60 * 60 * 1000;
       const maxFuture = now + 2 * 24 * 60 * 60 * 1000;
-      state.bearReports = (Array.isArray(json) ? json : [])
-        .map((item) => normalizeBearReport(item))
-        .filter((item) => item && item.eventTimeMs >= minTime && item.eventTimeMs <= maxFuture)
-        .sort((a, b) => b.eventTimeMs - a.eventTimeMs);
+      const collected = [];
+      const seenIds = new Set();
+
+      for (let pageIndex = 0; pageIndex < BEAR_REPORT_MAX_PAGES; pageIndex += 1) {
+        const offset = pageIndex * BEAR_REPORT_PAGE_SIZE;
+        const response = await fetch(
+          KUMAP_SUPABASE_URL +
+            "/rest/v1/points?select=id,event_time,content,location&order=event_time.desc&limit=" +
+            BEAR_REPORT_PAGE_SIZE +
+            "&offset=" +
+            offset,
+          {
+            headers: {
+              apikey: KUMAP_PUBLISHABLE_KEY,
+              Authorization: "Bearer " + KUMAP_PUBLISHABLE_KEY
+            }
+          }
+        );
+        if (!response.ok) {
+          throw new Error("bear reports fetch failed");
+        }
+        const json = await response.json();
+        const rows = Array.isArray(json) ? json : [];
+        rows
+          .map((item) => normalizeBearReport(item))
+          .filter((item) => item && item.eventTimeMs >= minTime && item.eventTimeMs <= maxFuture)
+          .forEach((item) => {
+            const dedupeKey = String(item.id || "") + ":" + item.eventTimeMs;
+            if (!seenIds.has(dedupeKey)) {
+              seenIds.add(dedupeKey);
+              collected.push(item);
+            }
+          });
+
+        if (rows.length < BEAR_REPORT_PAGE_SIZE) {
+          break;
+        }
+
+        const oldestTimeMs = Date.parse((rows[rows.length - 1] || {}).event_time || "");
+        if (Number.isFinite(oldestTimeMs) && oldestTimeMs < minTime) {
+          break;
+        }
+      }
+
+      state.bearReports = collected.sort((a, b) => b.eventTimeMs - a.eventTimeMs);
     } catch (error) {
       state.bearReports = [];
     } finally {
